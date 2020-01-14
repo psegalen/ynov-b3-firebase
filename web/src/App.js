@@ -46,8 +46,7 @@ class App extends React.Component {
     db.collection("messages")
       .orderBy("time", "desc")
       .limit(10)
-      .get()
-      .then(querySnapshot => {
+      .onSnapshot(querySnapshot => {
         const messages = [];
         querySnapshot.forEach(doc => {
           messages.push(doc.data());
