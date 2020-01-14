@@ -15,7 +15,9 @@ class App extends React.Component {
     super(props);
     this.state = {
       user: null,
-      isLoading: true
+      isLoading: true,
+      currentMessage: "",
+      messages: []
     };
   }
 
@@ -36,6 +38,22 @@ class App extends React.Component {
       .catch(function(error) {
         console.error(error);
       });
+    this.getMessages();
+  }
+
+  getMessages() {
+    const db = firebase.firestore();
+    db.collection("messages")
+      .orderBy("time", "desc")
+      .limit(10)
+      .get()
+      .then(querySnapshot => {
+        const messages = [];
+        querySnapshot.forEach(doc => {
+          messages.push(doc.data());
+        });
+        this.setState({ messages });
+      });
   }
 
   signOut() {
@@ -43,6 +61,20 @@ class App extends React.Component {
       .auth()
       .signOut()
       .then(() => console.log("User signed out"));
+  }
+
+  sendMessage() {
+    if (this.state.currentMessage.length === 0) alert("Empty message !");
+    else {
+      const db = firebase.firestore();
+      db.collection("messages")
+        .add({
+          userId: this.state.user.uid,
+          text: this.state.currentMessage,
+          time: firebase.firestore.Timestamp.fromDate(new Date())
+        })
+        .then(() => this.setState({ currentMessage: "" }));
+    }
   }
 
   render() {
@@ -56,6 +88,19 @@ class App extends React.Component {
             <span style={{ marginBottom: "16px" }}>
               Welcome {this.state.user.displayName || this.state.user.email}!
             </span>
+            {this.state.messages.map(msg => (
+              <span>{msg.text}</span>
+            ))}
+            <div style={{ marginBottom: "16px", flexDirection: "row" }}>
+              <input
+                type="text"
+                value={this.state.currentMessage}
+                onChange={evt =>
+                  this.setState({ currentMessage: evt.target.value })
+                }
+              />
+              <button onClick={this.sendMessage.bind(this)}>Send</button>
+            </div>
             <button onClick={this.signOut}>Sign Out</button>
           </header>
         ) : (
