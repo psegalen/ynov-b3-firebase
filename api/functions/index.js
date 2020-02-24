@@ -27,6 +27,23 @@ exports.postMessage = functions
     });
   });
 
+exports.getRooms = functions
+  .region("europe-west1")
+  .https.onRequest(async (req, res) => {
+    return cors(req, res, async () => {
+      const querySnapshot = await admin
+        .firestore()
+        .collection("rooms")
+        .orderBy("name", "asc")
+        .get();
+      const rooms = [];
+      querySnapshot.forEach(doc => {
+        rooms.push({ id: doc.id, name: doc.data().name });
+      });
+      res.json({ rooms });
+    });
+  });
+
 exports.debug = functions
   .region("europe-west1")
   .https.onRequest(async (req, res) => {
