@@ -43,13 +43,29 @@
 }
 
 a {
-  color: #fff;
+  color: #222;
   text-decoration: none;
   font-size: 0.8em;
+}
+
+.App-header a {
+  color: #fff;
 }
 
 .App-body {
   color: #222;
   flex: 1;
   display: flex;
+}
+
+.App-loading,
+.App-rooms {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: "center";
+}
+
+.App-rooms {
+  flex-direction: column;
 }

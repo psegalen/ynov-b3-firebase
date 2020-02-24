@@ -6,17 +6,30 @@ import logo from "./logo.svg";
 import "./App.css";
 import SignIn from "./SignIn";
 import Chat from "./Chat/Chat";
+import Axios from "axios";
 
-const Loading = props => (
-  <div
-    style={{
-      display: "flex",
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center"
-    }}
-  >
+const Loading = () => (
+  <div className="App-loading">
     <img src={logo} className="App-logo" alt="logo" />
+  </div>
+);
+
+const Rooms = props => (
+  <div className="App-rooms">
+    <span>Sélectionnez une chat room :</span>
+    {props.rooms.map(room => (
+      <a
+        href="#"
+        onClick={e => {
+          e.preventDefault();
+          props.selectChatRoom(room.id);
+        }}
+      >
+        <span>
+          {room.name} ({room.nbMessages} messages)
+        </span>
+      </a>
+    ))}
   </div>
 );
 
@@ -27,7 +40,9 @@ class App extends React.Component {
       user: null,
       isLoading: true,
       messages: [],
-      token: ""
+      token: "",
+      currentRoom: null,
+      rooms: []
     };
   }
 
@@ -61,18 +76,28 @@ class App extends React.Component {
       .catch(function(error) {
         console.error(error);
       });
-    this.getMessages();
+    this.getRooms();
   }
 
-  getMessages() {
+  getRooms() {
+    Axios.get("https://europe-west1-ynovb3web.cloudfunctions.net/getRooms")
+      .then(response => this.setState({ rooms: response.data.rooms }))
+      .catch(error => console.error(error));
+  }
+
+  selectChatRoom(id) {
+    this.setState({ currentRoom: id });
+    this.getMessages(id);
+  }
+
+  getMessages(roomId) {
     const db = firebase.firestore();
-    db.collection("messages")
-      .orderBy("time", "desc")
-      .limit(10)
-      .onSnapshot(querySnapshot => {
+    db.collection("rooms")
+      .doc(roomId)
+      .onSnapshot(doc => {
         const messages = [];
-        querySnapshot.forEach(doc => {
-          messages.push(doc.data());
+        doc.data().messages.forEach(message => {
+          messages.push(message);
         });
         this.setState({ messages });
       });
@@ -89,7 +114,15 @@ class App extends React.Component {
     return (
       <div className="App">
         <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
+          <a
+            href="#"
+            onClick={e => {
+              this.setState({ currentRoom: null, messages: [] });
+              e.preventDefault();
+            }}
+          >
+            <img src={logo} className="App-logo" alt="logo" />
+          </a>
           <span>
             Welcome{" "}
             {this.state.user &&
@@ -110,7 +143,14 @@ class App extends React.Component {
           {this.state.isLoading ? (
             <Loading />
           ) : this.state.user ? (
-            <Chat messages={this.state.messages} token={this.state.token} />
+            this.state.currentRoom ? (
+              <Chat messages={this.state.messages} token={this.state.token} />
+            ) : (
+              <Rooms
+                rooms={this.state.rooms}
+                selectChatRoom={this.selectChatRoom.bind(this)}
+              />
+            )
           ) : (
             <SignIn />
           )}
