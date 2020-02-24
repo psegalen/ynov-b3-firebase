@@ -2,6 +2,7 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import logo from "./logo.svg";
 import "./App.css";
 import SignIn from "./SignIn";
@@ -18,17 +19,11 @@ const Rooms = props => (
   <div className="App-rooms">
     <span>Sélectionnez une chat room :</span>
     {props.rooms.map(room => (
-      <a
-        href="#"
-        onClick={e => {
-          e.preventDefault();
-          props.selectChatRoom(room.id);
-        }}
-      >
+      <Link to={`/room/${room.id}`}>
         <span>
           {room.name} ({room.nbMessages} messages)
         </span>
-      </a>
+      </Link>
     ))}
   </div>
 );
@@ -39,9 +34,7 @@ class App extends React.Component {
     this.state = {
       user: null,
       isLoading: true,
-      messages: [],
       token: "",
-      currentRoom: null,
       rooms: []
     };
   }
@@ -85,24 +78,6 @@ class App extends React.Component {
       .catch(error => console.error(error));
   }
 
-  selectChatRoom(id) {
-    this.setState({ currentRoom: id });
-    this.getMessages(id);
-  }
-
-  getMessages(roomId) {
-    const db = firebase.firestore();
-    db.collection("rooms")
-      .doc(roomId)
-      .onSnapshot(doc => {
-        const messages = [];
-        doc.data().messages.forEach(message => {
-          messages.push(message);
-        });
-        this.setState({ messages });
-      });
-  }
-
   signOut() {
     firebase
       .auth()
@@ -112,50 +87,49 @@ class App extends React.Component {
 
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <a
-            href="#"
-            onClick={e => {
-              this.setState({ currentRoom: null, messages: [] });
-              e.preventDefault();
-            }}
-          >
-            <img src={logo} className="App-logo" alt="logo" />
-          </a>
-          <span>
-            Welcome{" "}
-            {this.state.user &&
-              (this.state.user.displayName || this.state.user.email)}
-            !
-          </span>
-          <a
-            href="#"
-            onClick={e => {
-              this.signOut();
-              e.preventDefault();
-            }}
-          >
-            <FontAwesomeIcon icon={faSignOutAlt} />
-          </a>
-        </header>
-        <div class="App-body">
-          {this.state.isLoading ? (
-            <Loading />
-          ) : this.state.user ? (
-            this.state.currentRoom ? (
-              <Chat messages={this.state.messages} token={this.state.token} />
+      <Router>
+        <div className="App">
+          <header className="App-header">
+            <Link to="/">
+              <img src={logo} className="App-logo" alt="logo" />
+            </Link>
+            <span>
+              Welcome{" "}
+              {this.state.user &&
+                (this.state.user.displayName || this.state.user.email)}
+              !
+            </span>
+            <a
+              href="#"
+              onClick={e => {
+                this.signOut();
+                e.preventDefault();
+              }}
+            >
+              <FontAwesomeIcon icon={faSignOutAlt} />
+            </a>
+          </header>
+          <div class="App-body">
+            {this.state.isLoading ? (
+              <Loading />
+            ) : this.state.user ? (
+              <Switch>
+                <Route path="/room/:roomId">
+                  <Chat
+                    messages={this.state.messages}
+                    token={this.state.token}
+                  />
+                </Route>
+                <Route path="/">
+                  <Rooms rooms={this.state.rooms} />
+                </Route>
+              </Switch>
             ) : (
-              <Rooms
-                rooms={this.state.rooms}
-                selectChatRoom={this.selectChatRoom.bind(this)}
-              />
-            )
-          ) : (
-            <SignIn />
-          )}
+              <SignIn />
+            )}
+          </div>
         </div>
-      </div>
+      </Router>
     );
   }
 }
