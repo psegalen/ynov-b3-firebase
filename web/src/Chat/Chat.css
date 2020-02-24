@@ -1,0 +1,20 @@
+.Chat-body {
+  flex-direction: column;
+  display: flex;
+  flex: 1;
+}
+
+.Chat-messages {
+  flex-direction: column;
+  display: flex;
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.Chat-composer {
+  padding: 16px;
+  flex-direction: row;
+  justify-content: center;
+  display: flex;
+}

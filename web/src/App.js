@@ -1,14 +1,23 @@
 /* eslint-disable no-undef */
 import React from "react";
-import Axios from "axios";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import logo from "./logo.svg";
 import "./App.css";
 import SignIn from "./SignIn";
+import Chat from "./Chat/Chat";
 
 const Loading = props => (
-  <header className="App-header">
+  <div
+    style={{
+      display: "flex",
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center"
+    }}
+  >
     <img src={logo} className="App-logo" alt="logo" />
-  </header>
+  </div>
 );
 
 class App extends React.Component {
@@ -17,7 +26,6 @@ class App extends React.Component {
     this.state = {
       user: null,
       isLoading: true,
-      currentMessage: "",
       messages: [],
       token: ""
     };
@@ -77,55 +85,36 @@ class App extends React.Component {
       .then(() => console.log("User signed out"));
   }
 
-  sendMessage() {
-    if (this.state.currentMessage.length === 0) alert("Empty message !");
-    else {
-      // use API!
-      Axios.post(
-        "https://europe-west1-ynovb3web.cloudfunctions.net/postMessage",
-        {
-          text: this.state.currentMessage
-        },
-        {
-          headers: {
-            FirebaseToken: this.state.token
-          }
-        }
-      )
-        .then(response => console.log(response))
-        .catch(error => console.error(error));
-    }
-  }
-
   render() {
     return (
       <div className="App">
-        {this.state.isLoading ? (
-          <Loading />
-        ) : this.state.user ? (
-          <header className="App-header">
-            <img src={logo} className="App-logo" alt="logo" />
-            <span style={{ marginBottom: "16px" }}>
-              Welcome {this.state.user.displayName || this.state.user.email}!
-            </span>
-            {this.state.messages.map(msg => (
-              <span>{msg.text}</span>
-            ))}
-            <div style={{ marginBottom: "16px", flexDirection: "row" }}>
-              <input
-                type="text"
-                value={this.state.currentMessage}
-                onChange={evt =>
-                  this.setState({ currentMessage: evt.target.value })
-                }
-              />
-              <button onClick={this.sendMessage.bind(this)}>Send</button>
-            </div>
-            <button onClick={this.signOut}>Sign Out</button>
-          </header>
-        ) : (
-          <SignIn />
-        )}
+        <header className="App-header">
+          <img src={logo} className="App-logo" alt="logo" />
+          <span>
+            Welcome{" "}
+            {this.state.user &&
+              (this.state.user.displayName || this.state.user.email)}
+            !
+          </span>
+          <a
+            href="#"
+            onClick={e => {
+              this.signOut();
+              e.preventDefault();
+            }}
+          >
+            <FontAwesomeIcon icon={faSignOutAlt} />
+          </a>
+        </header>
+        <div class="App-body">
+          {this.state.isLoading ? (
+            <Loading />
+          ) : this.state.user ? (
+            <Chat messages={this.state.messages} token={this.state.token} />
+          ) : (
+            <SignIn />
+          )}
+        </div>
       </div>
     );
   }
