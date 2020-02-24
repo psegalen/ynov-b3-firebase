@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 import React from "react";
+import Axios from "axios";
 import logo from "./logo.svg";
 import "./App.css";
 import SignIn from "./SignIn";
@@ -17,7 +18,8 @@ class App extends React.Component {
       user: null,
       isLoading: true,
       currentMessage: "",
-      messages: []
+      messages: [],
+      token: ""
     };
   }
 
@@ -28,6 +30,19 @@ class App extends React.Component {
       .then(() => {
         firebase.auth().onAuthStateChanged(user => {
           console.log("Auth changed: ", user);
+          if (firebase.auth().currentUser) {
+            firebase
+              .auth()
+              .currentUser.getIdToken()
+              .then(token => {
+                console.log("User token : ", token);
+                if (this.state.token !== token) {
+                  this.setState({
+                    token
+                  });
+                }
+              });
+          }
           if (user) {
             this.setState({ user, isLoading: false });
           } else {
@@ -65,14 +80,20 @@ class App extends React.Component {
   sendMessage() {
     if (this.state.currentMessage.length === 0) alert("Empty message !");
     else {
-      const db = firebase.firestore();
-      db.collection("messages")
-        .add({
-          userId: this.state.user.uid,
-          text: this.state.currentMessage,
-          time: firebase.firestore.Timestamp.fromDate(new Date())
-        })
-        .then(() => this.setState({ currentMessage: "" }));
+      // use API!
+      Axios.post(
+        "https://europe-west1-ynovb3web.cloudfunctions.net/postMessage",
+        {
+          text: this.state.currentMessage
+        },
+        {
+          headers: {
+            FirebaseToken: this.state.token
+          }
+        }
+      )
+        .then(response => console.log(response))
+        .catch(error => console.error(error));
     }
   }
 
