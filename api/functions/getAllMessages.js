@@ -1,4 +1,4 @@
-const getAllMessages = admin => async (req, res) => {
+const getAllMessages = async (admin, res) => {
   const querySnapshot = await admin
     .firestore()
     .collection("messages")
