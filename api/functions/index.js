@@ -38,7 +38,11 @@ exports.getRooms = functions
         .get();
       const rooms = [];
       querySnapshot.forEach(doc => {
-        rooms.push({ id: doc.id, name: doc.data().name });
+        rooms.push({
+          id: doc.id,
+          name: doc.data().name,
+          nbMessages: doc.data().messages.length
+        });
       });
       res.json({ rooms });
     });
