@@ -62,7 +62,11 @@ const changeRoomSubscription = async (admin, req, res) => {
       try {
         const { subscribedUsers } = result.room;
         let isActionCorrect = true;
-        if (body.action == "subscribe" && subscribedUsers.indexOf(uid) !== -1) {
+        if (
+          body.action == "subscribe" &&
+          subscribedUsers &&
+          subscribedUsers.indexOf(uid) !== -1
+        ) {
           res.status(400).json({
             status: "error",
             error: "L'utilisateur a déjà souscrit à cette chat room !"
@@ -71,7 +75,7 @@ const changeRoomSubscription = async (admin, req, res) => {
         }
         if (
           body.action == "unsubscribe" &&
-          subscribedUsers.indexOf(uid) === -1
+          (!subscribedUsers || subscribedUsers.indexOf(uid) === -1)
         ) {
           res.status(400).json({
             status: "error",
@@ -82,9 +86,15 @@ const changeRoomSubscription = async (admin, req, res) => {
         }
         if (isActionCorrect) {
           if (body.action == "subscribe") {
-            await result.roomRef.update({
-              subscribedUsers: admin.firestore.FieldValue.arrayUnion(uid)
-            });
+            if (!subscribedUsers) {
+              await result.roomRef.update({
+                subscribedUsers: [uid]
+              });
+            } else {
+              await result.roomRef.update({
+                subscribedUsers: admin.firestore.FieldValue.arrayUnion(uid)
+              });
+            }
           } else {
             await result.roomRef.update({
               subscribedUsers: admin.firestore.FieldValue.arrayRemove(uid)
