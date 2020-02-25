@@ -56,3 +56,11 @@ exports.setToken = functions
       await usersFunctions.savePushToken(admin, req, res);
     });
   });
+
+exports.changeRoomSubscription = functions
+  .region("europe-west1")
+  .https.onRequest(async (req, res) => {
+    return cors(req, res, async () => {
+      await usersFunctions.changeRoomSubscription(admin, req, res);
+    });
+  });

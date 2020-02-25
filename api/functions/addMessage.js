@@ -1,14 +1,15 @@
+const userTokenCheck = require("./userTokenCheck");
+
 const addMessage = async (admin, req, res) => {
   const message = req.body;
-  const token = req.get("FirebaseToken");
 
   console.log(message);
 
-  if (!token || token.length === 0) {
-    res
-      .status(400)
-      .json({ status: "error", error: "Pas de token dans les headers !" });
-  } else if (!message.text || message.text.length === 0) {
+  const uid = await userTokenCheck(admin, req, res);
+
+  if (!uid) return;
+
+  if (!message.text || message.text.length === 0) {
     res
       .status(400)
       .json({ status: "error", error: "Le champ 'text' est obligatoire !" });
@@ -17,32 +18,6 @@ const addMessage = async (admin, req, res) => {
       .status(400)
       .json({ status: "error", error: "Le champ 'roomId' est obligatoire !" });
   } else {
-    // Message OK
-    let uid = "";
-    try {
-      console.log("Token reçu >>>>> ", token);
-      const decodedToken = await admin.auth().verifyIdToken(token);
-      uid = decodedToken.uid;
-    } catch (error) {
-      res.status(400).json({
-        status: "error",
-        error: "Impossible de décoder le token !",
-        details: error.message
-      });
-    }
-
-    try {
-      const user = await admin.auth().getUser(uid);
-      // User exists
-    } catch (error) {
-      // User doesn't exist
-      res.status(400).json({
-        status: "error",
-        error: "L'utilisateur n'existe pas !",
-        details: error.message
-      });
-    }
-
     try {
       const room = await admin
         .firestore()
@@ -55,7 +30,7 @@ const addMessage = async (admin, req, res) => {
           details: error.message
         });
       } else {
-        room.update({
+        await room.update({
           messages: admin.firestore.FieldValue.arrayUnion({
             text: message.text,
             userId: uid,
