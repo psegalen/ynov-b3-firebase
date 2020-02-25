@@ -64,3 +64,16 @@ exports.changeRoomSubscription = functions
       await usersFunctions.changeRoomSubscription(admin, req, res);
     });
   });
+
+exports.sendPushOnNewMessage = functions
+  .region("europe-west1")
+  .firestore.document("rooms/{roomId}")
+  .onWrite((change, context) => {
+    const { roomId } = context.params;
+    console.log(roomId);
+    const { messages } = change.after.data();
+    const latestMessage = messages[messages.length - 1];
+    console.log(latestMessage);
+
+    return "Done";
+  });

@@ -18,7 +18,6 @@ const chatRoomCheck = async (admin, res, roomId) => {
         });
         return null;
       } else {
-        console.log(room);
         return { roomRef, room: room.data() };
       }
     } catch (error) {
