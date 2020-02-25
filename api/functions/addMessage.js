@@ -2,6 +2,8 @@ const addMessage = async (admin, req, res) => {
   const message = req.body;
   const token = req.get("FirebaseToken");
 
+  console.log(message);
+
   if (!token || token.length === 0) {
     res
       .status(400)
