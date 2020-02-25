@@ -1,4 +1,5 @@
 const userTokenCheck = require("./userTokenCheck");
+const chatRoomCheck = require("./chatRoomCheck");
 
 const addMessage = async (admin, req, res) => {
   const message = req.body;
@@ -13,24 +14,12 @@ const addMessage = async (admin, req, res) => {
     res
       .status(400)
       .json({ status: "error", error: "Le champ 'text' est obligatoire !" });
-  } else if (!message.roomId || message.roomId.length === 0) {
-    res
-      .status(400)
-      .json({ status: "error", error: "Le champ 'roomId' est obligatoire !" });
   } else {
-    try {
-      const room = await admin
-        .firestore()
-        .collection("rooms")
-        .doc(message.roomId);
-      if (!room) {
-        res.status(400).json({
-          status: "error",
-          error: "La chat room n'existe pas !",
-          details: error.message
-        });
-      } else {
-        await room.update({
+    const result = await chatRoomCheck(admin, res, message.roomId);
+    if (result) {
+      const { roomRef } = result;
+      try {
+        await roomRef.update({
           messages: admin.firestore.FieldValue.arrayUnion({
             text: message.text,
             userId: uid,
@@ -40,13 +29,13 @@ const addMessage = async (admin, req, res) => {
         res.json({
           status: "ok"
         });
+      } catch (error) {
+        res.status(400).json({
+          status: "error",
+          error: "Impossible de mettre à jour la chat room !",
+          details: error.message
+        });
       }
-    } catch (error) {
-      res.status(400).json({
-        status: "error",
-        error: "Impossible d'ajouter le message !",
-        details: error.message
-      });
     }
   }
 };

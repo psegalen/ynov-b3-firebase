@@ -1,4 +1,5 @@
 const userTokenCheck = require("./userTokenCheck");
+const chatRoomCheck = require("./chatRoomCheck");
 
 const savePushToken = async (admin, req, res) => {
   const { body } = req;
@@ -45,18 +46,61 @@ const changeRoomSubscription = async (admin, req, res) => {
 
   if (!uid) return;
 
-  if (!body.roomId || body.roomId.length === 0) {
-    res
-      .status(400)
-      .json({ status: "error", error: "Le champ 'roomId' est obligatoire !" });
+  if (
+    !body.action ||
+    body.action.length === 0 ||
+    (body.action != "subscribe" && body.action != "unsubscribe")
+  ) {
+    res.status(400).json({
+      status: "error",
+      error:
+        "Le champ 'action' est obligatoire et doit contenir 'subscribe' ou 'unsubscribe' !"
+    });
   } else {
-    try {
-    } catch (error) {
-      res.status(400).json({
-        status: "error",
-        error: "Impossible d'ajouter le token !",
-        details: error.message
-      });
+    const result = await chatRoomCheck(admin, res, body.roomId);
+    if (result) {
+      try {
+        const { subscribedUsers } = result.room;
+        let isActionCorrect = true;
+        if (body.action == "subscribe" && subscribedUsers.indexOf(uid) !== -1) {
+          res.status(400).json({
+            status: "error",
+            error: "L'utilisateur a déjà souscrit à cette chat room !"
+          });
+          isActionCorrect = false;
+        }
+        if (
+          body.action == "unsubscribe" &&
+          subscribedUsers.indexOf(uid) === -1
+        ) {
+          res.status(400).json({
+            status: "error",
+            error:
+              "L'utilisateur n'a pas souscrit à cette chat room au préalable !"
+          });
+          isActionCorrect = false;
+        }
+        if (isActionCorrect) {
+          if (body.action == "subscribe") {
+            await result.roomRef.update({
+              subscribedUsers: admin.firestore.FieldValue.arrayUnion(uid)
+            });
+          } else {
+            await result.roomRef.update({
+              subscribedUsers: admin.firestore.FieldValue.arrayRemove(uid)
+            });
+          }
+          res.json({
+            status: "ok"
+          });
+        }
+      } catch (error) {
+        res.status(400).json({
+          status: "error",
+          error: "Impossible de mettre à jour la chat room !",
+          details: error.message
+        });
+      }
     }
   }
 };
