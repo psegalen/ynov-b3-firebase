@@ -1,4 +1,5 @@
 const functions = require("firebase-functions");
+const axios = require("axios");
 const addMessage = require("./addMessage");
 const getAllMessages = require("./getAllMessages");
 const usersFunctions = require("./usersFunctions");
@@ -68,12 +69,38 @@ exports.changeRoomSubscription = functions
 exports.sendPushOnNewMessage = functions
   .region("europe-west1")
   .firestore.document("rooms/{roomId}")
-  .onWrite((change, context) => {
+  .onWrite(async (change, context) => {
     const { roomId } = context.params;
     console.log(roomId);
-    const { messages } = change.after.data();
+    const { messages, subscribedUsers, name } = change.after.data();
     const latestMessage = messages[messages.length - 1];
     console.log(latestMessage);
+    console.log(subscribedUsers);
 
+    subscribedUsers.forEach(async userId => {
+      // Get token and send a push notification
+      const userRef = admin
+        .firestore()
+        .collection("users")
+        .doc(userId);
+      const user = await userRef.get();
+      if (user.exists) {
+        const { token } = user.data();
+        if (token) {
+          try {
+            await axios.post("https://exp.host/--/api/v2/push/send", {
+              to: token,
+              sound: "default",
+              title: `Nouveau message dans ${name} !`,
+              body: latestMessage.text
+            });
+          } catch (error) {
+            console.error(
+              `L'appel réseau n'a pas fonctionné : ${error.message}`
+            );
+          }
+        }
+      }
+    });
     return "Done";
   });
